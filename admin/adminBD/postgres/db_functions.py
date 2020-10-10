@@ -7,8 +7,14 @@ import os
 DIR_NAME = os.path.dirname(os.path.abspath(__file__))
 
 
-class SQLInjection(object):
+class SQLInjection:
+    """
+    Базовый класс для работы с базой данных
+    """
     def __init__(self):
+        """
+        Инициализация подключения к БД
+        """
         config = configparser.ConfigParser()
         config.read(DIR_NAME + "/settings.ini")
 
@@ -24,6 +30,12 @@ class SQLInjection(object):
             print("ERROR: {}".format(e))
 
     def __call__(self, sqlcommand, **kwargs):
+        """
+        Выополнение sql скрипта
+        :param sqlcommand: текст sql
+        :param kwargs: динамические параметры
+        :return: ответ от БД
+        """
         with self.con.cursor(cursor_factory=DictCursor) as cursor:
             try:
                 com = sql.SQL(sqlcommand).format(kwargs)

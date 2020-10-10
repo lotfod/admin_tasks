@@ -1,11 +1,16 @@
 import psycopg2
+from psycopg2 import sql
+from psycopg2.extras import DictCursor
 import configparser
+import os
+
+DIR_NAME = os.path.dirname(os.path.abspath(__file__))
 
 
 class SQLInjection(object):
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read("settings.ini")
+        config.read(DIR_NAME + "/settings.ini")
 
         try:
             self.con = psycopg2.connect(
@@ -15,15 +20,20 @@ class SQLInjection(object):
                 host=config["BD"]["host"],
                 port=config["BD"]["port"]
             )
-            print("Connection successful")
         except psycopg2.DatabaseError as e:
             print("ERROR: {}".format(e))
 
     def __call__(self, sqlcommand, **kwargs):
-        with self.con.cursor() as cursor:
+        with self.con.cursor(cursor_factory=DictCursor) as cursor:
             try:
-                cursor.execute(sqlcommand)
-                cursor.commit()
+                com = sql.SQL(sqlcommand).format(kwargs)
+                cursor.execute(com)
+                try:
+                    result = cursor.fetchall()
+                    self.con.commit()
+                    return result
+                except:
+                    self.con.commit()
             except psycopg2.DatabaseError as e:
-                cursor.rollback()
-                print('DBError: '.format(e))
+                print('DBError: {}'.format(e))
+                self.con.rollback()
